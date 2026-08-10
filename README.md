@@ -1,89 +1,77 @@
 # HPC Performance Lab
 
-A reproducible C++ performance-engineering lab for dense matrix multiplication. It begins with a cache-blocked CPU kernel and evolves into an OpenMP, MPI, and CUDA benchmark suite.
+A dense matrix multiplication (GEMM) benchmark suite in C++, built as a hands-on way to learn HPC performance engineering. Starting point: a cache-blocked CPU kernel. End goal: OpenMP, MPI, and CUDA versions of the same problem, benchmarked side by side.
 
-## Why this project
+## Why I'm building this
 
-HPC and AI-infrastructure work requires repeatable experiments, numerical validation, scheduler-aware execution, and performance evidence not only parallel code. This repository demonstrates that workflow in a compact codebase.
+I wanted a project where I couldn't just write parallel code and call it done — I had to prove it was correct and prove it was actually faster. That means deterministic test inputs, a reference check against a naive implementation, and numbers that come from a real scheduler (Slurm), not just my laptop.
 
-**Week 1 scope:** a correct, cache-blocked C++ GEMM kernel; baseline measurements; local, container, and Slurm execution.
+Right now this is Week 1: a working blocked GEMM kernel in C++20, baseline timings, and three ways to run it (locally, in a container, or via Slurm).
 
-## Capabilities
+## What's here
 
-- Deterministic input generation and reference result validation
-- Cache blocked C++20 GEMM with configurable matrix and tile sizes
-- Optional OpenMP build for shared memory scaling
-- CSV benchmark output
-- Slurm batch script, container definition and GitHub Actions smoke test
+- C++20 GEMM kernel with cache blocking (configurable tile size)
+- Reference implementation + validation so I know the fast version is still correct
+- Optional OpenMP build for multi-threaded runs
+- Results get written to CSV
+- A Slurm script and a Dockerfile so it runs the same way everywhere
+- A GitHub Actions job that runs the build + tests on every push
 
-## Architecture
+## How it's put together
 
-```text
-CLI options -> deterministic matrices -> blocked GEMM -> validation + GFLOP/s
-                                              |
-                                 local script / Slurm / container
-                                              |
-                                    reproducible CSV record
+Input matrices are generated deterministically → run through the blocked GEMM loop → checked against a reference result → timed and converted to GFLOP/s. The blocking keeps each output tile in cache during the inner loop, which is what makes this faster than the naive triple loop.
+
+```
+CLI args -> deterministic matrices -> blocked GEMM -> validate + GFLOP/s -> CSV
 ```
 
-The row major blocked loop order keeps each output tile private to one OpenMP iteration and reuses cache resident blocks. It is deliberately small enough to profile and improve in later milestones.
+## Running it
 
-## Quick start
+You need a C++20 compiler and `make`.
 
-Requirements: a C++20 compiler and `make`.
-
-```bash
+```
 make
 make test
 ./bin/gemm_bench --size 512 --block-size 32 --repetitions 3 --verify
 ./scripts/run_benchmarks.sh
 ```
 
-For OpenMP on Linux with a compatible compiler:
+With OpenMP:
 
-```bash
+```
 make clean
 make OPENMP=1
 OMP_NUM_THREADS=8 ./bin/gemm_bench --size 1024 --block-size 32 --threads 8 --verify
 ```
 
-Container run:
+With Docker:
 
-```bash
+```
 docker build -f containers/Dockerfile -t hpc-perf-lab .
 docker run --rm hpc-perf-lab
 ```
 
-## Slurm
+## Running it on a cluster
 
-Update the module line in `slurm/gemm-cpu.slurm` for your cluster, then run:
+Edit the module line in `slurm/gemm-cpu.slurm` to match whatever's available on your cluster, then:
 
-```bash
+```
 sbatch slurm/gemm-cpu.slurm
 ```
 
-## Measuring performance
+## How I'm measuring performance
 
-The benchmark reports average runtime and throughput:
+`GFLOP/s = 2 * N^3 / elapsed_seconds / 1e9`
 
-`GFLOP/s = 2 x N^3 / elapsed_seconds / 10^9`
+For any number I report, I log the CPU, core count, OS, compiler, flags, matrix/tile size, thread count, repetitions, and whether validation passed. If two runs aren't using the same workload and both haven't passed validation, I don't compare them.
 
-For every published result, record the CPU model, core count, OS, compiler and flags, matrix and tile size, thread count, repetitions and verification result. Never claim a speedup unless both measurements use the same workload and have passed validation.
+Full writeup: [docs/experiment-plan.md](docs/experiment-plan.md)
 
-See [the experiment plan](docs/experiment-plan.md).
 
-## Roadmap
+## Note
 
-- [x] Week 1: blocked GEMM, validation, CSV, Slurm, and container workflow
-- [ ] Week 2: OpenMP scaling, CPU affinity notes, `perf` profile, and charts
-- [ ] Week 3: MPI distributed GEMM and communication measurements
-- [ ] Week 4: CUDA kernel, Nsight profile, CPU-versus-GPU report
-- [ ] Week 5: hybrid MPI+CUDA and performance-regression checks
-
-## Limitations
-
-This educational GEMM code is not a replacement for BLAS. Its purpose is to show transparent design, verification, experiment discipline, and documented optimization decisions.
+This isn't meant to compete with BLAS — it's a learning project focused on writing correct, measurable, reproducible parallel code and documenting the tradeoffs along the way.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
