@@ -4,17 +4,17 @@ A reproducible C++ performance-engineering lab for dense matrix multiplication. 
 
 ## Why this project
 
-HPC and AI-infrastructure work requires repeatable experiments, numerical validation, scheduler-aware execution, and performance evidence—not only parallel code. This repository demonstrates that workflow in a compact codebase.
+HPC and AI-infrastructure work requires repeatable experiments, numerical validation, scheduler-aware execution, and performance evidence not only parallel code. This repository demonstrates that workflow in a compact codebase.
 
 **Week 1 scope:** a correct, cache-blocked C++ GEMM kernel; baseline measurements; local, container, and Slurm execution.
 
 ## Capabilities
 
-- Deterministic input generation and reference-result validation
-- Cache-blocked C++20 GEMM with configurable matrix and tile sizes
-- Optional OpenMP build for shared-memory scaling
+- Deterministic input generation and reference result validation
+- Cache blocked C++20 GEMM with configurable matrix and tile sizes
+- Optional OpenMP build for shared memory scaling
 - CSV benchmark output
-- Slurm batch script, container definition, and GitHub Actions smoke test
+- Slurm batch script, container definition and GitHub Actions smoke test
 
 ## Architecture
 
@@ -26,7 +26,7 @@ CLI options -> deterministic matrices -> blocked GEMM -> validation + GFLOP/s
                                     reproducible CSV record
 ```
 
-The row-major blocked loop order keeps each output tile private to one OpenMP iteration and reuses cache-resident blocks. It is deliberately small enough to profile and improve in later milestones.
+The row major blocked loop order keeps each output tile private to one OpenMP iteration and reuses cache resident blocks. It is deliberately small enough to profile and improve in later milestones.
 
 ## Quick start
 
@@ -68,7 +68,7 @@ The benchmark reports average runtime and throughput:
 
 `GFLOP/s = 2 x N^3 / elapsed_seconds / 10^9`
 
-For every published result, record the CPU model, core count, OS, compiler and flags, matrix and tile size, thread count, repetitions, and verification result. Never claim a speedup unless both measurements use the same workload and have passed validation.
+For every published result, record the CPU model, core count, OS, compiler and flags, matrix and tile size, thread count, repetitions and verification result. Never claim a speedup unless both measurements use the same workload and have passed validation.
 
 See [the experiment plan](docs/experiment-plan.md).
 
