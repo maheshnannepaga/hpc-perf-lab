@@ -21,8 +21,7 @@ bin:
 	mkdir -p $@
 
 test: $(TARGET)
-	./tests/smoke_test.sh $(TARGET)
+	bash ./tests/smoke_test.sh $(TARGET)
 
 clean:
 	rm -rf bin build
-
