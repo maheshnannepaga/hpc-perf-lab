@@ -12,7 +12,7 @@ I wanted a project where I couldn't just write parallel code and call it done â€
 
 The current implementation is a **CPU GEMM benchmark in C++20**, with cache blocking and an optional OpenMP parallel loop. Docker and Slurm scripts provide additional ways to run it. **CUDA and MPI implementations are planned.**
 
-Published benchmark datasets and speedup comparisons are still pending; the `results/` directory currently contains a placeholder. The presence of a Slurm script does not establish that cluster measurements have been collected.
+A first [local CPU baseline study](docs/cpu-baseline.md) now includes 45 verified samples, metadata, a repeatable collection script, and learning exercises. These are Darwin arm64 serial CPU measurements with incomplete hardware identification, not cluster or GPU results. Speedup comparisons remain pending. The presence of a Slurm script does not establish that cluster measurements have been collected.
 
 ## What's here
 
