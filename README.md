@@ -1,12 +1,18 @@
 # HPC Performance Lab
 
+[![Build and tests](https://github.com/maheshnannepaga/hpc-perf-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/maheshnannepaga/hpc-perf-lab/actions/workflows/ci.yml)
+
 A dense matrix multiplication (GEMM) benchmark suite in C++, built as a hands-on way to learn HPC performance engineering. Starting point: a cache-blocked CPU kernel. End goal: OpenMP, MPI, and CUDA versions of the same problem, benchmarked side by side.
 
 ## Why I'm building this
 
 I wanted a project where I couldn't just write parallel code and call it done — I had to prove it was correct and prove it was actually faster. That means deterministic test inputs, a reference check against a naive implementation, and numbers that come from a real scheduler (Slurm), not just my laptop.
 
-Right now this is Week 1: a working blocked GEMM kernel in C++20, baseline timings, and three ways to run it (locally, in a container, or via Slurm).
+## Project status
+
+The current implementation is a **CPU GEMM benchmark in C++20**, with cache blocking and an optional OpenMP parallel loop. Docker and Slurm scripts provide additional ways to run it. **CUDA and MPI implementations are planned.**
+
+Published benchmark datasets and speedup comparisons are still pending; the `results/` directory currently contains a placeholder. The presence of a Slurm script does not establish that cluster measurements have been collected.
 
 ## What's here
 
@@ -19,7 +25,7 @@ Right now this is Week 1: a working blocked GEMM kernel in C++20, baseline timin
 
 ## How it's put together
 
-Input matrices are generated deterministically → run through the blocked GEMM loop → checked against a reference result → timed and converted to GFLOP/s. The blocking keeps each output tile in cache during the inner loop, which is what makes this faster than the naive triple loop.
+Input matrices are generated deterministically → run through the blocked GEMM loop → checked against a reference result → timed and converted to GFLOP/s. Cache blocking is intended to improve data reuse. Its performance benefit depends on the hardware, matrix size, tile size, and compiler; it must be established through measurements.
 
 ```
 CLI args -> deterministic matrices -> blocked GEMM -> validate + GFLOP/s -> CSV
@@ -68,9 +74,24 @@ For any number I report, I log the CPU, core count, OS, compiler, flags, matrix/
 Full writeup: [docs/experiment-plan.md](docs/experiment-plan.md)
 
 
-## Note
+## Measurement boundaries
 
-This isn't meant to compete with BLAS — it's a learning project focused on writing correct, measurable, reproducible parallel code and documenting the tradeoffs along the way.
+- The benchmark reports the mean runtime across repetitions. The timed region includes clearing the output matrix and executing the blocked kernel.
+- `--verify` compares the final result against a serial reference using an absolute tolerance of `1e-9`. Use this flag for any published measurement; without it, the current program's success/verification output does not establish numerical validation.
+- The serial reference is used for correctness, not timed as a performance baseline by the current executable.
+- Thread counts affect execution only in an OpenMP-enabled build. Record the build configuration alongside results.
+- No comparison with optimized BLAS or GPU libraries is claimed.
+
+## GPU and HPC roadmap
+
+1. Publish CPU measurements across matrix sizes and tile sizes, with hardware and compiler metadata.
+2. Measure OpenMP scaling against a one-thread run of the same kernel, with correctness checks enabled.
+3. Add a CUDA baseline and a shared-memory tiled GEMM kernel, including non-tile-aligned matrix sizes.
+4. Measure GPU kernel time separately from allocation and host/device transfers; document precision and validation tolerances.
+5. Compare equivalent workloads with cuBLAS and document the remaining performance gap.
+6. Explore MPI decomposition and communication overhead after the single-node measurements are established.
+
+These are future milestones, not completed features. The project focuses on correct, measurable, reproducible performance engineering and documented tradeoffs.
 
 ## License
 
