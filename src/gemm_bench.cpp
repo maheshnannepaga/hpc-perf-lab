@@ -26,7 +26,11 @@ struct Options {
 
 int parse_positive(const char* value, const std::string& option) {
   try {
-    const int parsed = std::stoi(value);
+    const std::string text(value);
+    if (text.empty() || !std::all_of(text.begin(), text.end(), [](unsigned char ch) {
+          return ch >= '0' && ch <= '9';
+        })) throw std::invalid_argument("not an integer");
+    const int parsed = std::stoi(text);
     if (parsed <= 0) throw std::invalid_argument("not positive");
     return parsed;
   } catch (const std::exception&) {
@@ -104,8 +108,10 @@ void gemm_blocked(const Matrix& a, const Matrix& b, Matrix& c, int n, int block_
 }
 
 bool approximately_equal(const Matrix& lhs, const Matrix& rhs) {
+  if (lhs.size() != rhs.size()) return false;
   for (size_t i = 0; i < lhs.size(); ++i)
-    if (std::abs(lhs[i] - rhs[i]) > 1e-9) return false;
+    if (!std::isfinite(lhs[i]) || !std::isfinite(rhs[i]) ||
+        std::abs(lhs[i] - rhs[i]) > 1e-9) return false;
   return true;
 }
 
@@ -114,6 +120,10 @@ bool approximately_equal(const Matrix& lhs, const Matrix& rhs) {
 int main(int argc, char** argv) {
   try {
     const Options options = parse_options(argc, argv);
+#ifndef HPC_PERF_USE_OPENMP
+    if (options.threads != 1)
+      throw std::runtime_error("--threads requires an OpenMP build when greater than 1");
+#endif
     const size_t element_count = static_cast<size_t>(options.size) * options.size;
     Matrix a(element_count), b(element_count), c(element_count), reference(element_count);
     fill_deterministic(a);
@@ -136,13 +146,13 @@ int main(int argc, char** argv) {
       std::cout << "size,block_size,repetitions,threads,avg_seconds,gflops,verified\n"
                 << options.size << ',' << options.block_size << ',' << options.repetitions << ','
                 << options.threads << ',' << std::fixed << std::setprecision(6) << average_seconds
-                << ',' << std::setprecision(3) << gflops << ',' << (valid ? "true" : "false") << '\n';
+                << ',' << std::setprecision(3) << gflops << ',' << (options.verify ? (valid ? "true" : "false") : "not_requested") << '\n';
     } else {
       std::cout << "GEMM benchmark\nsize: " << options.size << " x " << options.size
                 << "\nblock size: " << options.block_size << "\nthreads: " << options.threads
                 << "\naverage runtime: " << std::fixed << std::setprecision(6) << average_seconds
                 << " s\nthroughput: " << std::setprecision(3) << gflops << " GFLOP/s\nverification: "
-                << (valid ? "PASS" : "FAIL") << '\n';
+                << (options.verify ? (valid ? "PASS" : "FAIL") : "NOT REQUESTED") << '\n';
     }
     return valid ? EXIT_SUCCESS : EXIT_FAILURE;
   } catch (const std::exception& error) {
