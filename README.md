@@ -14,6 +14,8 @@ The current implementation is a **CPU GEMM benchmark in C++20**, with cache bloc
 
 A first [local CPU baseline study](docs/cpu-baseline.md) now includes 45 verified samples, metadata, a repeatable collection script, and learning exercises. These are Darwin arm64 serial CPU measurements with incomplete hardware identification, not cluster or GPU results. Speedup comparisons remain pending. The presence of a Slurm script does not establish that cluster measurements have been collected.
 
+The [verification milestone](docs/verification.md) adds independent kernel regression checks, explicit unchecked-result reporting, and sanitizer-backed tests before parallel scaling.
+
 ## What's here
 
 - C++20 GEMM kernel with cache blocking (configurable tile size)
@@ -77,9 +79,9 @@ Full writeup: [docs/experiment-plan.md](docs/experiment-plan.md)
 ## Measurement boundaries
 
 - The benchmark reports the mean runtime across repetitions. The timed region includes clearing the output matrix and executing the blocked kernel.
-- `--verify` compares the final result against a serial reference using an absolute tolerance of `1e-9`. Use this flag for any published measurement; without it, the current program's success/verification output does not establish numerical validation.
+- `--verify` compares the final result against a serial reference using an absolute tolerance of `1e-9`. Use this flag for any published measurement. Without it, text output says `NOT REQUESTED` and CSV uses `not_requested`; an unchecked run is never labeled as numerically verified.
 - The serial reference is used for correctness, not timed as a performance baseline by the current executable.
-- Thread counts affect execution only in an OpenMP-enabled build. Record the build configuration alongside results.
+- Thread counts greater than one require an OpenMP-enabled build; serial builds now reject them. Record the build configuration alongside results.
 - No comparison with optimized BLAS or GPU libraries is claimed.
 
 ## GPU and HPC roadmap
